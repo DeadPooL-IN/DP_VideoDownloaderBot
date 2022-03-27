@@ -205,7 +205,7 @@ def is_vimeo(link):
 
 
 def download_video(chat_id, video):
-    link, vid_format, title, topic = video
+    link, vid_format, title, indexx, topic = video
 
     if "youtu" in link:
         if vid_format in ["144", "240", "480"]:
@@ -288,7 +288,7 @@ def download_video(chat_id, video):
         return 2, "", caption, filename
     else:
         filename += "." + path.split(".")[-1]
-        caption = f"By: {NAME}\n\nTitle: {title}\n\nTopic: {topic}"
+        caption = f"By: {NAME}\n\nTitle: {title}\n\nTopic: {topic}\n\nIndex: {indexx}"
         return 0, path, caption, filename
 
 
@@ -300,7 +300,7 @@ async def download_videos(bot, message: Message, videos, thumbnail):
     err_list = []
     for index, video in videos:
         r, path, caption, filename = download_video(message.chat.id, video)
-        caption += f"\n\nIndex: {index}"
+        
         if r in [1, 2]:
             err_list.append(str(index))
             try:
@@ -323,24 +323,31 @@ def get_videos(req_videos):
     for video in req_videos:
         video_parts = video.split("|")
         try:
-            video_link, video_format, video_name, video_topic  = video_parts
+            video_link, video_format, video_name, video_index, video_topic  = video_parts
         except:
             try:
-                video_link, video_format, video_name = video_parts
+                video_link, video_format, video_name, video_index = video_parts
             except:
                 try:
-                    video_link, video_format = video_parts
+                    video_link, video_format, video_name = video_parts
                 except:
-                    video_link = video_parts[0]
-                    video_format = DEF_FORMAT
+                    try:
+                        video_link, video_format = video_parts
+                    except:
+                        video_link = video_parts[0]
+                        video_format = DEF_FORMAT
+                    finally:
+                        video_topic = ""
+                        video_name = ""
+                        video_index = ""  
                 finally:
                     video_topic = ""
-                    video_name = ""
+                    video_index = ""
             finally:
                 video_topic = ""
         if video_format == "":
             video_format = DEF_FORMAT
-        videos.append((video_link, video_format, video_name, video_topic))
+        videos.append((video_link, video_format, video_name, video_topic, video_index))
     return list(enumerate(videos, 1))
 
 
@@ -364,7 +371,7 @@ async def download_link(bot: Client, message: Message):
     videos_ans = await bot.ask(message.chat.id, dedent(download_ques))
     videos_ans = videos_ans.text
     videos_ans: str
-    req_videos = videos_ans.split(",")
+    req_videos = videos_ans.split("\n")
     if user is not None and user not in sudo_users and len(req_videos) > 1:
         await message.reply("Not authorized for this action.", quote=True)
         return
